@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import (
-    create_engine, Column, Integer, String, ForeignKey,
-    Enum, Table, Boolean, DateTime, Text
+    Column, Integer, String, ForeignKey,
+    Enum, Table, Boolean, Text
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
