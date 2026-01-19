@@ -1,0 +1,62 @@
+# Название пайплайна, отображается во вкладке Actions на GitHub
+name: MediaTracker CI
+
+# Определяем события, которые запускают проверку
+on:
+  push:
+    branches: [ "main", "develop", "feature/*" ] # Запуск при пуше в основные ветки
+  pull_request:
+    branches: [ "main" ]          # Запуск при создании PR в main
+
+jobs:
+  build-and-test:
+    # Используем свежую версию Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Копируем код репозитория в виртуальную машину GitHub
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Устанавливаем интерпретатор Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' 
+
+      # 3. Кэширование зависимостей (ускоряет повторные запуски CI)
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # 4. Установка всех необходимых библиотек
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # Устанавливаем инструменты качества и зависимости проекта
+          pip install flake8 mypy pytest pytest-cov
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # 5. Проверка стиля кода (Линтер)
+      # Проверяем только папку src. Если код "грязный" — билд упадет.
+      - name: Lint with flake8
+        run: |
+          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src --count --max-line-length=120 --statistics
+
+      # 6. Статический анализ типов (Mypy)
+      # Помогает найти ошибки логики до запуска кода
+      - name: Type checking with mypy
+        run: mypy src --ignore-missing-imports
+
+      # 7. Запуск тестов с генерацией отчета о покрытии
+      # Мы указываем PYTHONPATH, чтобы python видел папку src
+      - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          pytest --cov=src --cov-report=term-missing tests/
