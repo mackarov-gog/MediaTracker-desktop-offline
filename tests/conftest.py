@@ -2,8 +2,8 @@
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.database.models import Base
-from src.services.media_service import MediaService
+from database.models import Base
+from services.media_service import MediaService
 
 @pytest.fixture
 def db_session():
